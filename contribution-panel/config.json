@@ -1,0 +1,5 @@
+{
+	"chain_length": 2,
+	"hardware_mapping": "adrafruit-hat",
+	"rows": 16
+}
