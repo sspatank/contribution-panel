@@ -1,4 +1,5 @@
 {
-	"username": "yourgithubusername",
-	"api-key": "*********"
+	"your-username": "YourUsernameHere",
+	"subject-username": "HeatmapUserHere",
+	"api-token": "GenerateThisOnGithub"
 }
