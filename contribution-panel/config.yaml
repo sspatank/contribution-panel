@@ -1,0 +1,26 @@
+---
+# Chain length is the number of panels connected in series
+chain-length: 2
+
+# Hardware mapping is used if you have a different wiring than described in wiring, for instance if you have an Adafruit HAT/Bonnet, you can choose these here:
+# - regular The standard mapping of this library, described in the wiring page.
+# - adafruit-hat The Adafruit HAT/Bonnet, that uses this library or
+# - adafruit-hat-pwm Adafruit HAT with the anti-flicker hardware mod described below.
+# - compute-module Additional 3 parallel chains can be used with the Compute Module.
+hardware-mapping: "adrafruit-hat"
+
+# Number of rows in a matrix.  Typically 8, 16, 32 or 64
+rows: 16
+
+# The interval to fetch a new heatmap in seconds. 86400 is 24 hrs
+heatmap-interval: 86400
+
+# Sets the color of the leds:
+# - Red: 0
+# - Yellow: 1
+# - Green: 2
+# - Turquiose: 3  
+# - Blue: 4
+# - Purple: 5
+# - : 6 
+start-color: 2
