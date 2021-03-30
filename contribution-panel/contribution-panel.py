@@ -70,27 +70,24 @@ class CommitHeatmap(SampleBase):
 
 
     def run(self):
-        self.get_heatmap()
-        self.heatmap_getter = RepeatedTimer(self.data["heatmap-interval"], self.get_heatmap)
-        canvas = self.matrix.CreateFrameCanvas()
+        canvas = None
+        try:
+            self.get_heatmap()
+            self.heatmap_getter = RepeatedTimer(self.data["heatmap-interval"], self.get_heatmap)
+            canvas = self.matrix.CreateFrameCanvas()
+            canvas.Clear()
 
-
-        canvas.Clear()
-
-        while True:
-            """
-            Code goes here
-            """
-            try:
+            while True:
                 if self.heatmap_flag:
                     canvas.Clear()
                     canvas.SetImage(self.heatmap_image, self.matrix.width-53, self.matrix.height-7, unsafe=False)
                     canvas = self.matrix.SwapOnVSync(canvas)
                     self.heatmap_flag= False
-            except Exception as ex:
+        except Exception as ex:
+            if canvas is not None:
                 canvas.Clear()
-                print(ex)
-                sys.exit()
+            print(ex)
+            sys.exit()
 
 
 if __name__ == "__main__":
