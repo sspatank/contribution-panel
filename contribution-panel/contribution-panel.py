@@ -5,13 +5,13 @@ import base64
 import requests
 import yaml
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib
 from PIL import Image
 from samplebase import SampleBase
 import threading
 import datetime
 from timing import RepeatedTimer
-
+import sys
 
 class CommitHeatmap(SampleBase):
     def __init__(self, *args, **kwargs):
@@ -19,8 +19,14 @@ class CommitHeatmap(SampleBase):
         self.data = {}
         self.read_config("sensitive.yaml")
         self.read_config("config.yaml")
-        self.color = self.data["start-color"]
+        self.color = self.data['start-color']
         self.heatmap_flag = False
+
+        self.parser.set_defaults(led_rows=self.data['rows'])
+        self.parser.set_defaults(led_cols=self.data['columns'])
+        self.parser.set_defaults(led_chain=self.data['chain-length'])
+        self.parser.set_defaults(led_parallel=self.data['parallel-chains'])
+        self.parser.set_defaults(led_gpio_mapping=self.data['hardware-mapping'])
 
     def read_config(self, filename):
         with open(filename) as f:
@@ -51,7 +57,7 @@ class CommitHeatmap(SampleBase):
         self.generate_heatmap_image(heatmap)
 
     def generate_heatmap_image(self, heatmap_array):
-        image = np.dstack((np.full_like(heatmap_array, self.color/6.0),np.full_like(values, 1),values))
+        image = np.dstack((np.full_like(heatmap_array, self.color/6.0),np.full_like(heatmap_array, 1),heatmap_array))
         image = matplotlib.colors.hsv_to_rgb(image)
         image = Image.fromarray(np.uint8(image*255)).convert('RGB')
         with threading.Lock():
@@ -65,20 +71,27 @@ class CommitHeatmap(SampleBase):
 
     def run(self):
         self.get_heatmap()
-        self.heatmap_getter = RepeatedTimer(self.data["interval"], self.get_heatmap)
+        self.heatmap_getter = RepeatedTimer(self.data["heatmap-interval"], self.get_heatmap)
         canvas = self.matrix.CreateFrameCanvas()
 
 
-        canvas.clear()
+        canvas.Clear()
 
         while True:
             """
             Code goes here
             """
-            if self.heatmap_flag:
-                canvas.SetImage(self.heatmap_image,self.rows-53, self.columns-7)
-                canvas = self.matrix.SwapOnVSync(canvas)
-                self.heatmap_flag= False
+            try:
+                if self.heatmap_flag:
+                    canvas.Clear()
+                    canvas.SetImage(self.heatmap_image, self.matrix.width-53, self.matrix.height-7, unsafe=False)
+                    canvas = self.matrix.SwapOnVSync(canvas)
+                    self.heatmap_flag= False
+            except Exception as ex:
+                canvas.Clear()
+                print(ex)
+                sys.exit()
+
 
 if __name__ == "__main__":
     commit_heatmap = CommitHeatmap()
