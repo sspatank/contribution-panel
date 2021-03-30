@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 import base64
@@ -10,7 +10,7 @@ from PIL import Image
 from samplebase import SampleBase
 import threading
 import datetime
-from .timing import RepeatedTimer
+from timing import RepeatedTimer
 
 
 class CommitHeatmap(SampleBase):
@@ -24,7 +24,7 @@ class CommitHeatmap(SampleBase):
 
     def read_config(self, filename):
         with open(filename) as f:
-            self.data.update(yaml.load(f))
+            self.data.update(yaml.safe_load(f))
 
     def get_heatmap(self):
         heatmap_dict =  {
