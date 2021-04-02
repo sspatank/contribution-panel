@@ -19,7 +19,7 @@ rows: 16
 columns: 32
 
 # The interval to fetch a new heatmap in seconds. 86400 is 24 hrs
-heatmap-interval: 5
+heatmap-interval: 86400
 
 # Sets the color of the leds:
 # - Red: 0
