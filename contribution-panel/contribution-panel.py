@@ -3,6 +3,8 @@
 from __future__ import print_function
 import base64
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 import yaml
 import numpy as np
 import matplotlib
@@ -10,6 +12,7 @@ from PIL import Image
 from samplebase import SampleBase
 import threading
 import datetime
+import time
 from timing import RepeatedTimer
 import sys
 
@@ -44,17 +47,25 @@ class CommitHeatmap(SampleBase):
         query = {'query': '{ viewer { login } user(login: "%s") { id contributionsCollection { contributionCalendar { totalContributions weeks { contributionDays { color contributionLevel date weekday } firstDay } } } } }' % self.data['username'] }
         headers = {'Authorization': 'token %s' % self.data['api-token']}
         try:
-            req = requests.post(url=url, json=query, headers=headers)
+            session = requests.Session()
+            retry = Retry(connect=3, backoff_factor=0.5)
+            adapter = HTTPAdapter(max_retries=retry)
+            session.mount('http://',adapter)
+            session.mount('https://', adapter)
+            req = session.post(url=url, json=query, headers=headers)
             json_object = req.json()
             led_array = np.zeros([53, 7])
+
+            for r, weeks in enumerate(json_object['data']['user']['contributionsCollection']['contributionCalendar']['weeks']):
+                for c, days in enumerate(weeks['contributionDays']):
+                    led_array[r, c] = heatmap_dict[days['contributionLevel']]
+            heatmap = np.transpose(led_array)
+            self.generate_heatmap_image(heatmap)
+        except requests.exceptions.ConnectionError:
+            time.sleep(5)
+            pass
         except Exception as ex:
             print(ex)
-
-        for r, weeks in enumerate(json_object['data']['user']['contributionsCollection']['contributionCalendar']['weeks']):
-            for c, days in enumerate(weeks['contributionDays']):
-                led_array[r, c] = heatmap_dict[days['contributionLevel']]
-        heatmap = np.transpose(led_array)
-        self.generate_heatmap_image(heatmap)
 
     def generate_heatmap_image(self, heatmap_array):
         image = np.dstack((np.full_like(heatmap_array, self.color/6.0),np.full_like(heatmap_array, 1),heatmap_array))
