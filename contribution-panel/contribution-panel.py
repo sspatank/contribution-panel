@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib
 from PIL import Image
 from samplebase import SampleBase
+from rgbmatrix import graphics
 import threading
 import datetime
 import time
@@ -23,8 +24,15 @@ class CommitHeatmap(SampleBase):
         self.read_config("sensitive.yaml")
         self.read_config("config.yaml")
         self.color = self.data['start-color']
-        self.heatmap_flag = False
-
+        
+        self.update_flag = False
+        
+        self.font_file = "../rpi-rgb-led-matrix/fonts/4x6.bdf"
+        self.font = graphics.Font()
+        self.font.LoadFont(self.font_file)
+        clock_color = [int(255*x) for x in matplotlib.colors.hsv_to_rgb([self.color/6.0,1.0,1.0])]
+        self.text_color = graphics.Color(clock_color[0], clock_color[1], clock_color[2])
+        
         self.parser.set_defaults(led_rows=self.data['rows'])
         self.parser.set_defaults(led_cols=self.data['columns'])
         self.parser.set_defaults(led_chain=self.data['chain-length'])
@@ -73,27 +81,30 @@ class CommitHeatmap(SampleBase):
         image = Image.fromarray(np.uint8(image*255)).convert('RGB')
         with threading.Lock():
             self.heatmap_image = image
-            self.heatmap_flag = True
+            self.update_flag = True
 
-    def display_time(self):
-        #TODO
-        pass
-
+    def get_time(self):
+        with threading.Lock():
+            self.current_time = datetime.datetime.now().strftime("%H:%M %a,%-d %b")
+            self.update_flag = True
 
     def run(self):
         canvas = None
         try:
+            self.get_time()
             self.get_heatmap()
+            self.time_getter = RepeatedTimer(1, self.get_time)
             self.heatmap_getter = RepeatedTimer(self.data["heatmap-interval"], self.get_heatmap)
             canvas = self.matrix.CreateFrameCanvas()
             canvas.Clear()
 
             while True:
-                if self.heatmap_flag:
+                if self.update_flag:
                     canvas.Clear()
-                    canvas.SetImage(self.heatmap_image, self.matrix.width-53, self.matrix.height-7, unsafe=False)
+                    canvas.SetImage(self.heatmap_image, int((self.matrix.width-53)/2), self.matrix.height-7, unsafe=False)
+                    graphics.DrawText(canvas, self.font, 2, 6, self.text_color, self.current_time)
+                    self.update_flag = False
                     canvas = self.matrix.SwapOnVSync(canvas)
-                    self.heatmap_flag= False
         except Exception as ex:
             if canvas is not None:
                 canvas.Clear()
